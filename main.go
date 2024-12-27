@@ -66,6 +66,21 @@ func main() {
 	var playerOne Player
 	playerOne.Name = "player one"
 	drawPlayerCards(&playerOne, &deck)
+
+	// example
+	// playerOne.Cards = [2]Card{
+	// 	{Symbol: "♦", Rank: "9"},
+	// 	{Symbol: "♠", Rank: "A"},
+	// }
+
+	// board = Board{
+	// 	{Symbol: "♠", Rank: "2"},
+	// 	{Symbol: "♣", Rank: "3"},
+	// 	{Symbol: "♥", Rank: "9"},
+	// 	{Symbol: "♦", Rank: "5"},
+	// 	{Symbol: "♣", Rank: "4"},
+	// }
+
 	fmt.Println("cards of player one:")
 	fmt.Println(playerOne.Cards[0])
 	fmt.Println(playerOne.Cards[1])
@@ -223,13 +238,15 @@ func checkFullHouse(cards *[]Card) []Card {
 		return nil
 	}
 
-	threeOfKinds := checkNOfAKind(cards, 3)
+	cardsCopy := append([]Card(nil), *cards...)
+
+	threeOfKinds := checkNOfAKind(&cardsCopy, 3)
 
 	if threeOfKinds == nil {
 		return nil
 	}
 
-	twoPairs := checkNOfAKind(cards, 2)
+	twoPairs := checkNOfAKind(&cardsCopy, 2)
 
 	if twoPairs == nil {
 		return nil
@@ -309,52 +326,30 @@ func checkStreet(cards []Card) []Card {
 		"J": 11, "Q": 12, "K": 13, "A": 14,
 	}
 
-	var sortedRanks []int
+	rankSet := make(map[string]Card)
 	for _, card := range cards {
-		sortedRanks = append(sortedRanks, rankOrder[card.Rank])
+		rankSet[card.Rank] = card
 	}
 
-	rankSet := make(map[int]bool)
-	for _, rank := range sortedRanks {
-		rankSet[rank] = true
+	uniqueCards := []Card{}
+	for _, card := range rankSet {
+		uniqueCards = append(uniqueCards, card)
 	}
 
-	var uniqueRanks []int
-	for rank := range rankSet {
-		uniqueRanks = append(uniqueRanks, rank)
-	}
-	sort.Ints(uniqueRanks)
+	for i := 0; i <= len(uniqueCards)-5; i++ {
+		isStreet := true
+		streetCards := []Card{uniqueCards[i]}
 
-	for i := 0; i <= len(uniqueRanks)-5; i++ {
-		if uniqueRanks[i+4]-uniqueRanks[i] == 4 {
-			var straight []Card
-			for _, rank := range uniqueRanks[i : i+5] {
-				for _, card := range cards {
-					if rankOrder[card.Rank] == rank {
-						straight = append(straight, card)
-						break
-					}
-				}
+		for j := 1; j < 5; j++ {
+			if rankOrder[uniqueCards[i+j-1].Rank]-1 != rankOrder[uniqueCards[i+j].Rank] {
+				isStreet = false
+				break
 			}
-			sortCardsByRanking(&straight)
-			return straight
+			streetCards = append(streetCards, uniqueCards[i+j])
 		}
-	}
 
-	lowStreet := []int{rankOrder["2"], rankOrder["3"], rankOrder["4"], rankOrder["5"]}
-	if rankSet[rankOrder["A"]] {
-		var straight []Card
-		for _, rank := range lowStreet {
-			for _, card := range cards {
-				if rankOrder[card.Rank] == rank {
-					straight = append(straight, card)
-					break
-				}
-			}
-		}
-		if len(straight) == 5 {
-			sortCardsByRanking(&straight)
-			return straight
+		if isStreet {
+			return streetCards
 		}
 	}
 
