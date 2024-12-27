@@ -20,25 +20,23 @@ type Player struct {
 	Name   string
 	Money  int
 	Cards  [2]Card
-	Status string
+	Status Status
+}
+
+type Game struct {
+	Pot int
+}
+
+type Status struct {
+	Cards []Card
+	Type  int
+	Score int
 }
 
 func main() {
+
 	symbols := []string{"♣", "♠", "♥", "♦"}
 	ranks := []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
-
-	// rankingCombinations := []string{
-	// 	"highCard",
-	// 	"pair",
-	// 	"twoPair",
-	// 	"threeOfAKind",
-	// 	"straight",
-	// 	"flush",
-	// 	"fullHouse",
-	// 	"fourOfAKind",
-	// 	"straightFlush",
-	// 	"royalFlush",
-	// }
 
 	var deck Deck
 
@@ -48,44 +46,41 @@ func main() {
 		}
 	}
 
-	// drawCard(&deck)
-	// fmt.Println("total number:", len(deck))
+	var players []Player
+	for i := 1; i <= 3; i++ {
+		player := Player{
+			Name: fmt.Sprintf("player%d", i),
+		}
+		drawPlayerCards(&player, &deck)
+		players = append(players, player)
+	}
 
-	// drawCard(&deck)
-	// fmt.Println("total number:", len(deck))
-
-	// drawCard(&deck)
-	// fmt.Println("total number:", len(deck))
-
+	for _, player := range players {
+		fmt.Printf("cards of %s:\n", player.Name)
+		fmt.Println(player.Cards)
+		fmt.Println("")
+	}
 	var board Board
 
 	doFlop(&board, &deck)
 	doTurn(&board, &deck)
 	doRiver(&board, &deck)
 
-	var playerOne Player
-	playerOne.Name = "player one"
-	drawPlayerCards(&playerOne, &deck)
+	fmt.Println("board:", board)
 
-	// example
-	// playerOne.Cards = [2]Card{
-	// 	{Symbol: "♦", Rank: "9"},
-	// 	{Symbol: "♠", Rank: "A"},
-	// }
+	for i := range players {
+		fmt.Printf("%s:\n", players[i].Name)
+		checkStatus(&players[i], &board)
+		fmt.Println("")
+	}
 
-	// board = Board{
-	// 	{Symbol: "♠", Rank: "2"},
-	// 	{Symbol: "♣", Rank: "3"},
-	// 	{Symbol: "♥", Rank: "9"},
-	// 	{Symbol: "♦", Rank: "5"},
-	// 	{Symbol: "♣", Rank: "4"},
-	// }
+	sortPlayersByRanking(&players)
 
-	fmt.Println("cards of player one:")
-	fmt.Println(playerOne.Cards[0])
-	fmt.Println(playerOne.Cards[1])
+	fmt.Println("final rankings:")
+	for _, player := range players {
+		fmt.Printf("%s (score: %d)\n", player.Name, player.Status.Score)
+	}
 
-	checkStatus(&playerOne, &board)
 }
 
 func drawCard(deck *Deck) Card {
@@ -131,14 +126,40 @@ func checkStatus(player *Player, board *Board) string {
 		cards = append(cards, board[i])
 	}
 
-	fmt.Println(cards)
+	cards = filterEmptyCards(cards)
+
+	// fmt.Println(cards)
 
 	sortCardsByRanking(&cards)
-	fmt.Println("sorted:", cards)
+	// fmt.Println("sorted:", cards)
 
-	fmt.Println(checkRanking(cards))
+	ranking, rankedCards := checkRanking(cards)
+
+	fmt.Println(ranking)
+	score := 0
+
+	for _, card := range rankedCards {
+		score += getCardRankValue(card)
+	}
+	player.Status = Status{
+		Cards: rankedCards,
+		Type:  getRankingType(ranking),
+		Score: score,
+	}
+
+	fmt.Println(player.Status)
 
 	return ""
+}
+
+func filterEmptyCards(cards []Card) []Card {
+	var filtered []Card
+	for _, card := range cards {
+		if card.Symbol != "" && card.Rank != "" {
+			filtered = append(filtered, card)
+		}
+	}
+	return filtered
 }
 
 func checkRanking(cards []Card) (string, []Card) {
@@ -188,6 +209,22 @@ func checkRanking(cards []Card) (string, []Card) {
 	}
 
 	return "highCard", cards[:1]
+}
+
+func getRankingType(ranking string) int {
+	rankingMap := map[string]int{
+		"highCard":      1,
+		"pair":          2,
+		"twoPair":       3,
+		"threeOfAKind":  4,
+		"straight":      5,
+		"flush":         6,
+		"fullHouse":     7,
+		"fourOfAKind":   8,
+		"straightFlush": 9,
+		"royalFlush":    10,
+	}
+	return rankingMap[ranking]
 }
 
 func checkRoyalFlush(cards []Card) []Card {
@@ -363,5 +400,22 @@ func sortCardsByRanking(cards *[]Card) {
 	}
 	sort.SliceStable(*cards, func(i, j int) bool {
 		return rankOrder[(*cards)[i].Rank] > rankOrder[(*cards)[j].Rank]
+	})
+}
+
+func getCardRankValue(card Card) int {
+	rankOrder := map[string]int{
+		"2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+		"J": 11, "Q": 12, "K": 13, "A": 14,
+	}
+	return rankOrder[card.Rank]
+}
+
+func sortPlayersByRanking(players *[]Player) {
+	sort.Slice(*players, func(i, j int) bool {
+		if (*players)[i].Status.Type != (*players)[j].Status.Type {
+			return (*players)[i].Status.Type > (*players)[j].Status.Type
+		}
+		return (*players)[i].Status.Score > (*players)[j].Status.Score
 	})
 }
