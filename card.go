@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 type Card struct {
@@ -300,14 +303,53 @@ func getRankingType(ranking string) int {
 	return rankingMap[ranking]
 }
 
-func getCardsString(cards []Card) string {
-	cardsStr := ""
-	for _, card := range cards {
-		if card.Symbol != "" && card.Rank != "" {
-			cardsStr += fmt.Sprintf("[%s %s] ", card.Rank, card.Symbol)
-		} else {
-			cardsStr += ""
-		}
+//	func getCardsString(cards []Card) string {
+//		cardsStr := ""
+//		for _, card := range cards {
+//			if card.Symbol != "" && card.Rank != "" {
+//				cardsStr += fmt.Sprintf("[%s %s] ", card.Rank, card.Symbol)
+//			} else {
+//				cardsStr += ""
+//			}
+//		}
+//		return cardsStr
+//	}
+
+func getCardString(card Card) string {
+	var color lipgloss.Style
+	switch card.Symbol {
+	case "♠", "♣":
+		color = Black
+	case "♥", "♦":
+		color = Red
+	default:
+		color = Grey
 	}
-	return cardsStr
+
+	cardStr := "┌───────┐\n"
+	cardStr += fmt.Sprintf("│%2s     │\n", card.Rank)
+	cardStr += fmt.Sprintf("│   %s   │\n", color.Render(card.Symbol))
+	cardStr += fmt.Sprintf("│     %2s│\n", card.Rank)
+	cardStr += "└───────┘\n"
+	cardStr += "\n"
+	return cardStr
+}
+
+func getCardsString(cards []Card) string {
+	var one, two, three, four, five string
+
+	for _, card := range cards {
+		cardStr := getCardString(card)
+		lines := strings.Split(cardStr, "\n")
+
+		one += lines[0] + " "
+		two += lines[1] + " "
+		three += lines[2] + " "
+		four += lines[3] + " "
+		five += lines[4] + " "
+	}
+
+	result := strings.TrimSpace(one) + "\n" + strings.TrimSpace(two) + "\n" + strings.TrimSpace(three) + "\n" + strings.TrimSpace(four) + "\n" + strings.TrimSpace(five) + "\n"
+
+	return result
 }

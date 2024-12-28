@@ -5,6 +5,15 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	Red    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+	Grey   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	Green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	Black  = lipgloss.NewStyle().Foreground(lipgloss.Color("0"))
+	Yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 )
 
 func (game Game) Init() tea.Cmd {
@@ -24,23 +33,23 @@ func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				raiseAmount = game.Pot * 2
 			}
 			if game.doRaise(raiseAmount) {
-				game.MsgLog = append(game.MsgLog, fmt.Sprintf("%s raised to %d.", game.Players[game.CurrentPlayer].Name, raiseAmount))
+				game.MsgLog = append(game.MsgLog, Green.Render(fmt.Sprintf("%s raised to %d.", game.Players[game.CurrentPlayer].Name, raiseAmount)))
 				actionSuccessful = true
 			} else {
-				game.MsgLog = append(game.MsgLog, "not enough")
+				game.MsgLog = append(game.MsgLog, Red.Render("not enough"))
 			}
 		case "f":
 			if game.doFold() {
-				game.MsgLog = append(game.MsgLog, fmt.Sprintf("%s folded.", game.Players[game.CurrentPlayer].Name))
+				game.MsgLog = append(game.MsgLog, Black.Render(fmt.Sprintf("%s folded.", game.Players[game.CurrentPlayer].Name)))
 				actionSuccessful = true
 			}
 		case "c":
 			if game.doCall() {
-				game.MsgLog = append(game.MsgLog, fmt.Sprintf("%s called to %d.", game.Players[game.CurrentPlayer].Name, game.Players[game.CurrentPlayer].InPot))
+				game.MsgLog = append(game.MsgLog, Yellow.Render(fmt.Sprintf("%s called to %d.", game.Players[game.CurrentPlayer].Name, game.Players[game.CurrentPlayer].InPot)))
 				actionSuccessful = true
 			}
 		case " ":
-			game.MsgLog = append(game.MsgLog, fmt.Sprintf("%s checked.", game.Players[game.CurrentPlayer].Name))
+			game.MsgLog = append(game.MsgLog, Grey.Render(fmt.Sprintf("%s checked.", game.Players[game.CurrentPlayer].Name)))
 			actionSuccessful = true
 		case "q":
 			game.Quit = true
@@ -74,7 +83,7 @@ func (game Game) View() string {
 	playerCardsDisplay := getCardsString(current.Cards[:])
 
 	return fmt.Sprintf(
-		"Pot: %d\n\nBoard: %s\n\nCurrent Player: %s (Money: %d)\n%s (%s)\n\nActions:\n[r] Raise\n[f] Fold\n[c] Call\n[q] Quit\n\nLog:\n%s",
+		"Pot: %d\n\nBoard\n%s\n\nCurrent Player: %s (Money: %d)\n%s (%s)\n\nActions:\n[r] Raise\n[f] Fold\n[c] Call\n[_] Check\n[q] Quit\n\nLog:\n%s",
 		game.Pot,
 		boardDisplay,
 		current.Name,
@@ -83,5 +92,4 @@ func (game Game) View() string {
 		current.Status.TypeName,
 		strings.Join(game.MsgLog, "\n"),
 	)
-
 }
