@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 )
@@ -9,6 +10,10 @@ type Card struct {
 	Symbol string
 	Rank   string
 }
+
+type Deck []Card
+
+type Board [5]Card
 
 func newDeck() Deck {
 	symbols := []string{"♣", "♠", "♥", "♦"}
@@ -293,4 +298,16 @@ func getRankingType(ranking string) int {
 		"royalFlush":    10,
 	}
 	return rankingMap[ranking]
+}
+
+func getCardsString(cards []Card) string {
+	cardsStr := ""
+	for _, card := range cards {
+		if card.Symbol != "" && card.Rank != "" {
+			cardsStr += fmt.Sprintf("[%s %s] ", card.Rank, card.Symbol)
+		} else {
+			cardsStr += ""
+		}
+	}
+	return cardsStr
 }
