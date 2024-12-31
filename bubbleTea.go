@@ -5,15 +5,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	Red    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-	Grey   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	Green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	Black  = lipgloss.NewStyle().Foreground(lipgloss.Color("0"))
-	Yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 )
 
 func (game Game) Init() tea.Cmd {
@@ -21,75 +12,86 @@ func (game Game) Init() tea.Cmd {
 }
 
 func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if len(game.Rounds) == 0 || game.CurrentRound >= len(game.Rounds) {
+		return game, nil
+	}
+
+	round := &game.Rounds[game.CurrentRound]
+	player := &round.Players[round.CurrentPlayer]
+
+	actionSuccessful := false
+	message := ""
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		actionSuccessful := false
 		switch msg.String() {
 		case "r":
-			var raiseAmount int
-			if game.Pot*2 == 0 {
-				raiseAmount = 10
-			} else {
-				raiseAmount = game.Pot * 2
-			}
-			if game.doRaise(raiseAmount) {
-				game.MsgLog = append(game.MsgLog, Green.Render(fmt.Sprintf("%s raised to %d.", game.Players[game.CurrentPlayer].Name, raiseAmount)))
-				actionSuccessful = true
-			} else {
-				game.MsgLog = append(game.MsgLog, Red.Render("not enough"))
-			}
+			actionSuccessful, message = round.raise()
 		case "f":
-			if game.doFold() {
-				game.MsgLog = append(game.MsgLog, Black.Render(fmt.Sprintf("%s folded.", game.Players[game.CurrentPlayer].Name)))
-				actionSuccessful = true
-			}
+			actionSuccessful, message = round.fold()
 		case "c":
-			if game.doCall() {
-				game.MsgLog = append(game.MsgLog, Yellow.Render(fmt.Sprintf("%s called to %d.", game.Players[game.CurrentPlayer].Name, game.Players[game.CurrentPlayer].InPot)))
-				actionSuccessful = true
-			}
+			actionSuccessful, message = round.call()
 		case " ":
-			game.MsgLog = append(game.MsgLog, Grey.Render(fmt.Sprintf("%s checked.", game.Players[game.CurrentPlayer].Name)))
-			actionSuccessful = true
+			actionSuccessful, message = round.check()
 		case "q":
 			game.Quit = true
 			return game, tea.Quit
 		}
 
 		if actionSuccessful {
-			totalPlayers := len(game.Players)
+			round.MsgLog = append(round.MsgLog, Green.Render(message))
+
+			activePlayers := getCountActivePlayers(*round)
+			if activePlayers < 2 {
+				game.endRound()
+				return game, nil
+			}
+
+			player.HasActed = true
+
+			totalPlayers := len(round.Players)
 			for i := 1; i < totalPlayers; i++ {
-				nextPlayer := (game.CurrentPlayer + i) % totalPlayers
-				if !game.Players[nextPlayer].IsOut {
-					game.CurrentPlayer = nextPlayer
+				nextPlayerId := (round.CurrentPlayer + i) % totalPlayers
+				nextPlayer := round.Players[nextPlayerId]
+				if !nextPlayer.IsOut {
+					round.CurrentPlayer = nextPlayerId
 					break
 				}
 			}
+
+			if allPlayersHaveActed(*round) {
+				if !round.nextStage() {
+					game.endRound()
+				}
+			}
+		} else {
+			round.MsgLog = append(round.MsgLog, Red.Render(message))
 		}
 	}
+
 	return game, nil
 }
 
 func (game Game) View() string {
-	if game.Quit {
-		return "Goodbye."
+	if game.CurrentRound >= len(game.Rounds) {
+		return "Invalid round."
 	}
 
-	current := game.Players[game.CurrentPlayer]
+	round := &game.Rounds[game.CurrentRound]
+	player := &round.Players[round.CurrentPlayer]
 
-	checkStatus(&current, &game.Board)
+	checkStatus(player, &round.Board)
 
-	boardDisplay := getCardsString(game.Board[:])
-	playerCardsDisplay := getCardsString(current.Cards[:])
+	boardDisplay := getCardsString(round.Board)
+	playerCardsDisplay := getCardsString(player.Cards)
 
 	return fmt.Sprintf(
 		"Pot: %d\n\nBoard\n%s\n\nCurrent Player: %s (Money: %d)\n%s (%s)\n\nActions:\n[r] Raise\n[f] Fold\n[c] Call\n[_] Check\n[q] Quit\n\nLog:\n%s",
-		game.Pot,
+		round.Pot,
 		boardDisplay,
-		current.Name,
-		current.Money,
+		player.Name,
+		player.Money,
 		playerCardsDisplay,
-		current.Status.TypeName,
-		strings.Join(game.MsgLog, "\n"),
+		player.Status.TypeName,
+		strings.Join(round.MsgLog, "\n"),
 	)
 }

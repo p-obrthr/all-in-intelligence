@@ -1,48 +1,44 @@
 package main
 
 type Game struct {
-	Players       []Player
-	Board         Board
-	Deck          Deck
-	Pot           int
-	LastRaise     int
-	CurrentPlayer int
-	MsgLog        []string
-	Quit          bool
+	Players        []Player
+	Rounds         []Round
+	CurrentRound   int
+	Quit           bool
+	BigBlindAmount int
 }
 
 func newGame() Game {
-	deck := newDeck()
 	var players []Player
 
 	totalPlayers := 3
 
 	for i := 1; i <= totalPlayers; i++ {
 		newPlayer := newPlayer(i)
-		drawPlayerCards(&newPlayer, &deck)
 		players = append(players, newPlayer)
 	}
 
-	return Game{
-		Players:       players,
-		Board:         Board{},
-		Deck:          deck,
-		Pot:           0,
-		CurrentPlayer: 0,
-		MsgLog:        []string{},
+	game := Game{
+		Players:        players,
+		Rounds:         []Round{},
+		BigBlindAmount: 40,
+		Quit:           false,
+		CurrentRound:   0,
 	}
+
+	newRound := newRound(game.Players)
+	game.Rounds = append(game.Rounds, newRound)
+
+	return game
 }
 
-func doFlop(board *Board, deck *Deck) {
-	for i := 0; i < 3; i++ {
-		board[i] = drawCard(deck)
+func (round *Round) determineWinner() int {
+	sortPlayersByRanking(&round.Players)
+
+	for i := 0; i < len(round.Players); i++ {
+		if !round.Players[i].IsOut {
+			return round.Players[i].Id - 1
+		}
 	}
-}
-
-func doTurn(board *Board, deck *Deck) {
-	board[3] = drawCard(deck)
-}
-
-func doRiver(board *Board, deck *Deck) {
-	board[4] = drawCard(deck)
+	return -1
 }

@@ -336,6 +336,10 @@ func getCardString(card Card) string {
 }
 
 func getCardsString(cards []Card) string {
+	if len(cards) == 0 {
+		return ""
+	}
+
 	var one, two, three, four, five string
 
 	for _, card := range cards {
