@@ -1,11 +1,12 @@
 package main
 
 type Game struct {
-	Players        []Player
-	Rounds         []Round
-	CurrentRound   int
-	Quit           bool
-	BigBlindAmount int
+	Players             []Player
+	Rounds              []Round
+	CurrentRound        int
+	Quit                bool
+	BigBlindAmount      int
+	WaitingForNextRound bool
 }
 
 func newGame() Game {
@@ -41,4 +42,15 @@ func (round *Round) determineWinner() int {
 		}
 	}
 	return -1
+}
+
+func (game *Game) startNewRound() {
+	if game.CurrentRound >= len(game.Rounds) {
+		game.Quit = true
+		return
+	}
+
+	newRound := newRound(game.Players)
+	game.Rounds = append(game.Rounds, newRound)
+	game.CurrentRound++
 }

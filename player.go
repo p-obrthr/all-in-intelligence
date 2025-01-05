@@ -17,16 +17,14 @@ type Player struct {
 }
 
 func newPlayer(i int) Player {
-
-	newPlayer := Player{
+	return Player{
 		Id:    i,
 		Name:  fmt.Sprintf("Player %d", i),
 		Cards: make([]Card, 2),
 		Money: 1000,
+		InPot: 0,
 		IsOut: false,
 	}
-
-	return newPlayer
 }
 
 type Status struct {
@@ -45,36 +43,45 @@ func sortPlayersByRanking(players *[]Player) {
 	})
 }
 
-func (round *Round) raise() (bool, string) {
-	amount := 100 + round.LastRaise
+func (round *Round) raise(amount_optional ...int) (bool, string) {
+	var amount int
+	if len(amount_optional) > 0 {
+		amount = amount_optional[0]
+	} else {
+		amount = round.LastRaise + 100
+	}
+
 	player := &round.Players[round.CurrentPlayer]
+
+	amount = round.LastRaise + 100
 
 	diff := amount - player.InPot
 
-	newBalance := player.Money - diff
-	if newBalance >= 0 {
-		player.Money = newBalance
-		round.Pot += amount
+	if player.Money >= diff {
+		player.Money -= diff
+		round.Pot += diff
 		player.InPot += diff
-		round.LastRaise = player.InPot
-		return true, fmt.Sprintf("%s raised to %d.", player.Name, player.InPot)
+		round.LastRaise = amount
+		resetPlayerActions(round)
+		return true, fmt.Sprintf("%s raised to %d.", player.Name, round.LastRaise)
+	} else {
+		return false, fmt.Sprintf("%s cannot raise to %d.", player.Name, diff)
 	}
-	return false, fmt.Sprintf("%s cannot raise.", player.Name)
 }
 
 func (round *Round) fold() (bool, string) {
 	currentPlayer := &round.Players[round.CurrentPlayer]
+	currentPlayer.IsOut = true
 	return true, fmt.Sprintf("%s folded.", currentPlayer.Name)
 }
 
 func (round *Round) check() (bool, string) {
+	player := &round.Players[round.CurrentPlayer]
 
-	currentPlayer := round.Players[round.CurrentPlayer]
-
-	if currentPlayer.InPot == round.LastRaise {
-		return true, fmt.Sprintf("%s checked.", currentPlayer.Name)
+	if player.InPot == round.LastRaise {
+		return true, fmt.Sprintf("%s checked.", player.Name)
 	} else {
-		return false, fmt.Sprintf("%s cannot check.", currentPlayer.Name)
+		return false, fmt.Sprintf("%s cannot check. Current raise is up to %d.", player.Name, round.LastRaise)
 	}
 }
 
@@ -82,17 +89,21 @@ func (round *Round) call() (bool, string) {
 	player := &round.Players[round.CurrentPlayer]
 	diff := round.LastRaise - player.InPot
 
-	if diff > 0 && player.Money >= diff {
-		player.Money -= diff
-		round.Pot += diff
-		player.InPot += diff
-		return true, fmt.Sprintf("%s called to %d.", player.Name, player.InPot)
+	if diff > 0 {
+		if player.Money >= diff {
+			player.Money -= diff
+			round.Pot += diff
+			player.InPot += diff
+			return true, fmt.Sprintf("%s called to %d.", player.Name, player.InPot)
+		} else {
+
+		}
 	}
-	return false, fmt.Sprintf("%s cannot call.", player.Name)
+	return true, fmt.Sprintf("%s checked.", player.Name)
 }
 
 func checkStatus(player *Player, board *[]Card) {
-	cards := append(player.Cards[:], (*board)...)
+	cards := append(player.Cards, *board...)
 	cards = filterEmptyCards(cards)
 
 	sortCardsByRanking(&cards)
@@ -122,9 +133,9 @@ func (round *Round) applyBlinds() {
 	smallBlindAmount := round.BigBlindAmount / 2
 	if smallBlindPlayer.Money >= smallBlindAmount {
 		smallBlindPlayer.Money -= smallBlindAmount
-		smallBlindPlayer.InPot += smallBlindAmount
+		smallBlindPlayer.InPot = smallBlindAmount
 		round.Pot += smallBlindAmount
-		round.LastRaise = smallBlindAmount
+		round.LastRaise = smallBlindPlayer.InPot
 		round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s paid small blind of %d.", smallBlindPlayer.Name, smallBlindAmount))
 	} else {
 
@@ -139,11 +150,12 @@ func (round *Round) applyBlinds() {
 	bigBlindAmount := round.BigBlindAmount
 	if bigBlindPlayer.Money >= bigBlindAmount {
 		bigBlindPlayer.Money -= bigBlindAmount
-		bigBlindPlayer.InPot += bigBlindAmount
+		bigBlindPlayer.InPot = bigBlindAmount
 		round.Pot += bigBlindAmount
-		round.LastRaise = bigBlindAmount
+		round.LastRaise = bigBlindPlayer.InPot
 		round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s paid big blind of %d.", bigBlindPlayer.Name, bigBlindAmount))
 	} else {
+
 	}
 
 	round.CurrentPlayer = (round.BigBlindId + 1) % len(round.Players)
@@ -153,6 +165,8 @@ func (round *Round) applyBlinds() {
 }
 
 func (round *Round) rotateBlinds() {
+	round.LastRaise = 0
+
 	round.SmallBlindId = (round.SmallBlindId + 1) % len(round.Players)
 	for round.Players[round.SmallBlindId].IsOut {
 		round.SmallBlindId = (round.SmallBlindId + 1) % len(round.Players)

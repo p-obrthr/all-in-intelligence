@@ -12,6 +12,14 @@ func (game Game) Init() tea.Cmd {
 }
 
 func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if game.WaitingForNextRound {
+		if _, ok := msg.(tea.KeyMsg); ok {
+			game.WaitingForNextRound = false
+			game.startNewRound()
+		}
+		return game, nil
+	}
+
 	if len(game.Rounds) == 0 || game.CurrentRound >= len(game.Rounds) {
 		return game, nil
 	}
@@ -23,6 +31,7 @@ func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	message := ""
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		game.WaitingForNextRound = false
 		switch msg.String() {
 		case "r":
 			actionSuccessful, message = round.raise()

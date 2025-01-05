@@ -303,17 +303,17 @@ func getRankingType(ranking string) int {
 	return rankingMap[ranking]
 }
 
-//	func getCardsString(cards []Card) string {
-//		cardsStr := ""
-//		for _, card := range cards {
-//			if card.Symbol != "" && card.Rank != "" {
-//				cardsStr += fmt.Sprintf("[%s %s] ", card.Rank, card.Symbol)
-//			} else {
-//				cardsStr += ""
-//			}
-//		}
-//		return cardsStr
-//	}
+func getCards(cards []Card) string {
+	cardsStr := ""
+	for _, card := range cards {
+		if card.Symbol != "" && card.Rank != "" {
+			cardsStr += fmt.Sprintf("[%s %s] ", card.Rank, card.Symbol)
+		} else {
+			cardsStr += ""
+		}
+	}
+	return cardsStr
+}
 
 func getCardString(card Card) string {
 	var color lipgloss.Style

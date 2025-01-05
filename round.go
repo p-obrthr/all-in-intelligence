@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Round struct {
 	Deck           Deck
@@ -31,9 +33,13 @@ func newRound(Players []Player) Round {
 		MsgLog:         []string{},
 	}
 
-	for _, player := range Players {
-		player.Cards[0] = drawCard(&newRound.Deck)
-		player.Cards[1] = drawCard(&newRound.Deck)
+	for i := range newRound.Players {
+		newRound.Players[i].Cards[0] = drawCard(&newRound.Deck)
+		newRound.Players[i].Cards[1] = drawCard(&newRound.Deck)
+		newRound.Players[i].InPot = 0
+		if newRound.Players[i].Money > 0 {
+			newRound.Players[i].IsOut = false
+		}
 	}
 
 	newRound.applyBlinds()
@@ -42,34 +48,23 @@ func newRound(Players []Player) Round {
 }
 
 func (game *Game) endRound() {
-	round := game.Rounds[game.CurrentRound]
-
+	round := &game.Rounds[game.CurrentRound]
 	winnerIndex := round.determineWinner()
 	if winnerIndex >= 0 {
 		winner := &round.Players[winnerIndex]
-		round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s wins", winner.Name))
-	}
-
-	if len(round.Players) < 2 {
-		game.Players[0].Money += round.Pot
-		game.Quit = true
-	} else {
-		for _, player := range game.Players {
-			if player.Money == 0 {
-				player.IsOut = true
-			} else {
-				player.IsOut = false
+		winner.Money += round.Pot
+		message := fmt.Sprintf("%s wins the round with a pot of %d.", winner.Name, round.Pot)
+		round.MsgLog = append(round.MsgLog, message)
+		for _, player := range round.Players {
+			if player.IsOut == false {
+				round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s cards: %s", player.Name, getCards(player.Cards)))
 			}
 		}
+		round.Pot = 0
+	} else {
 	}
 
-	resetPlayerActions(&game.Rounds[game.CurrentRound])
-
-	game.CurrentRound++
-	newRound := newRound(game.Players)
-	game.Rounds = append(game.Rounds, newRound)
-
-	newRound.applyBlinds()
+	game.WaitingForNextRound = true
 }
 
 func (round *Round) nextStage() bool {
