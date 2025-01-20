@@ -56,7 +56,7 @@ func (game *Game) endRound() {
 		message := fmt.Sprintf("%s wins the round with a pot of %d.", winner.Name, round.Pot)
 		round.MsgLog = append(round.MsgLog, message)
 		for _, player := range round.Players {
-			if player.IsOut == false {
+			if !player.IsOut {
 				round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s cards: %s", player.Name, getCards(player.Cards)))
 			}
 		}
@@ -74,15 +74,12 @@ func (round *Round) nextStage() bool {
 		round.Board = append(round.Board, drawCard(&round.Deck))
 		round.Board = append(round.Board, drawCard(&round.Deck))
 		round.MsgLog = append(round.MsgLog, "Flop.")
-		break
 	case 1:
 		round.Board = append(round.Board, drawCard(&round.Deck))
 		round.MsgLog = append(round.MsgLog, "River.")
-		break
 	case 2:
 		round.Board = append(round.Board, drawCard(&round.Deck))
 		round.MsgLog = append(round.MsgLog, "Turn.")
-		break
 	case 3:
 		return false
 	}

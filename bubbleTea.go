@@ -11,6 +11,24 @@ func (game Game) Init() tea.Cmd {
 	return nil
 }
 
+func (game *Game) handleKeyInput(key tea.KeyMsg) (bool, string) {
+	switch key.String() {
+	case "r":
+		return game.Rounds[game.CurrentRound].raise()
+	case "f":
+		return game.Rounds[game.CurrentRound].fold()
+	case "c":
+		return game.Rounds[game.CurrentRound].call()
+	case " ":
+		return game.Rounds[game.CurrentRound].check()
+	case "q":
+		game.Quit = true
+		return false, ""
+	default:
+		return false, ""
+	}
+}
+
 func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if game.WaitingForNextRound {
 		if _, ok := msg.(tea.KeyMsg); ok {
@@ -24,58 +42,7 @@ func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return game, nil
 	}
 
-	round := &game.Rounds[game.CurrentRound]
-	player := &round.Players[round.CurrentPlayer]
-
-	actionSuccessful := false
-	message := ""
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		game.WaitingForNextRound = false
-		switch msg.String() {
-		case "r":
-			actionSuccessful, message = round.raise()
-		case "f":
-			actionSuccessful, message = round.fold()
-		case "c":
-			actionSuccessful, message = round.call()
-		case " ":
-			actionSuccessful, message = round.check()
-		case "q":
-			game.Quit = true
-			return game, tea.Quit
-		}
-
-		if actionSuccessful {
-			round.MsgLog = append(round.MsgLog, Green.Render(message))
-
-			activePlayers := getCountActivePlayers(*round)
-			if activePlayers < 2 {
-				game.endRound()
-				return game, nil
-			}
-
-			player.HasActed = true
-
-			totalPlayers := len(round.Players)
-			for i := 1; i < totalPlayers; i++ {
-				nextPlayerId := (round.CurrentPlayer + i) % totalPlayers
-				nextPlayer := round.Players[nextPlayerId]
-				if !nextPlayer.IsOut {
-					round.CurrentPlayer = nextPlayerId
-					break
-				}
-			}
-
-			if allPlayersHaveActed(*round) {
-				if !round.nextStage() {
-					game.endRound()
-				}
-			}
-		} else {
-			round.MsgLog = append(round.MsgLog, Red.Render(message))
-		}
-	}
+	game.processGameUpdate(msg)
 
 	return game, nil
 }

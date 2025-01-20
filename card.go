@@ -38,12 +38,6 @@ func drawCard(deck *Deck) Card {
 	return card
 }
 
-func drawPlayerCards(player *Player, deck *Deck) {
-	for i := 0; i < 2; i++ {
-		player.Cards[i] = drawCard(deck)
-	}
-}
-
 func filterEmptyCards(cards []Card) []Card {
 	var filtered []Card
 	for _, card := range cards {

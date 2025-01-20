@@ -10,3 +10,10 @@ var (
 	Yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	Blue   = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 )
+
+func colorMessage(success bool, message string) string {
+	if success {
+		return Green.Render(message)
+	}
+	return Red.Render(message)
+}

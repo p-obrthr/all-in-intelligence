@@ -53,8 +53,6 @@ func (round *Round) raise(amount_optional ...int) (bool, string) {
 
 	player := &round.Players[round.CurrentPlayer]
 
-	amount = round.LastRaise + 100
-
 	diff := amount - player.InPot
 
 	if player.Money >= diff {
@@ -164,20 +162,16 @@ func (round *Round) applyBlinds() {
 	}
 }
 
-func (round *Round) rotateBlinds() {
-	round.LastRaise = 0
-
-	round.SmallBlindId = (round.SmallBlindId + 1) % len(round.Players)
-	for round.Players[round.SmallBlindId].IsOut {
-		round.SmallBlindId = (round.SmallBlindId + 1) % len(round.Players)
+func (round *Round) nextPlayer() {
+	totalPlayers := len(round.Players)
+	for i := 1; i < totalPlayers; i++ {
+		nextPlayerId := (round.CurrentPlayer + i) % totalPlayers
+		nextPlayer := round.Players[nextPlayerId]
+		if !nextPlayer.IsOut {
+			round.CurrentPlayer = nextPlayerId
+			break
+		}
 	}
-
-	round.BigBlindId = (round.BigBlindId + 1) % len(round.Players)
-	for round.Players[round.BigBlindId].IsOut {
-		round.BigBlindId = (round.BigBlindId + 1) % len(round.Players)
-	}
-
-	round.applyBlinds()
 }
 
 func getCountActivePlayers(round Round) int {
@@ -190,7 +184,7 @@ func getCountActivePlayers(round Round) int {
 	return activePlayers
 }
 
-func allPlayersHaveActed(round Round) bool {
+func isAllPlayersHaveActed(round Round) bool {
 	for _, player := range round.Players {
 		if !player.IsOut && !player.HasActed {
 			return false
