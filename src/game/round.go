@@ -1,7 +1,8 @@
-package main
+package game
 
 import (
 	"fmt"
+	"src/services"
 )
 
 type Round struct {
@@ -16,9 +17,10 @@ type Round struct {
 	BigBlindAmount int
 	SmallBlindId   int
 	BigBlindId     int
+	OpenAIClient   services.OpenAIClient
 }
 
-func newRound(Players []Player) Round {
+func newRound(Players []Player, client services.OpenAIClient) Round {
 	newRound := Round{
 		Deck:           newDeck(),
 		Players:        Players,
@@ -31,6 +33,7 @@ func newRound(Players []Player) Round {
 		SmallBlindId:   0,
 		BigBlindId:     1,
 		MsgLog:         []string{},
+		OpenAIClient:   client,
 	}
 
 	for i := range newRound.Players {
@@ -49,9 +52,8 @@ func newRound(Players []Player) Round {
 
 func (game *Game) endRound() {
 	round := &game.Rounds[game.CurrentRound]
-	winnerIndex := round.determineWinner()
-	if winnerIndex >= 0 {
-		winner := &round.Players[winnerIndex]
+	winner := round.determineWinner()
+	if winner != nil {
 		winner.Money += round.Pot
 		message := fmt.Sprintf("%s wins the round with a pot of %d.", winner.Name, round.Pot)
 		round.MsgLog = append(round.MsgLog, message)

@@ -1,4 +1,4 @@
-package main
+package game
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ type Player struct {
 	InPot    int
 	IsOut    bool
 	HasActed bool
+	IsLLM    bool
 }
 
 func newPlayer(i int) Player {
@@ -164,12 +165,32 @@ func (round *Round) applyBlinds() {
 
 func (round *Round) nextPlayer() {
 	totalPlayers := len(round.Players)
+
 	for i := 1; i < totalPlayers; i++ {
 		nextPlayerId := (round.CurrentPlayer + i) % totalPlayers
-		nextPlayer := round.Players[nextPlayerId]
-		if !nextPlayer.IsOut {
+		if !round.Players[nextPlayerId].IsOut {
 			round.CurrentPlayer = nextPlayerId
 			break
+		}
+	}
+}
+
+func (game *Game) processPlayerAction(actionSuccessful bool, message string) {
+	round := &game.Rounds[game.CurrentRound]
+	player := &round.Players[round.CurrentPlayer]
+
+	round.MsgLog = append(round.MsgLog, colorMessage(actionSuccessful, message))
+
+	if actionSuccessful {
+		player.HasActed = true
+		if getCountActivePlayers(*round) < 2 {
+			game.endRound()
+			return
+		}
+
+		round.nextPlayer()
+		if isAllPlayersHaveActed(*round) && !round.nextStage() {
+			game.endRound()
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package main
+package game
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func (game *Game) handleKeyInput(key tea.KeyMsg) (bool, string) {
 		return game.Rounds[game.CurrentRound].fold()
 	case "c":
 		return game.Rounds[game.CurrentRound].call()
-	case " ":
+	case " ", "_":
 		return game.Rounds[game.CurrentRound].check()
 	case "q":
 		game.Quit = true
@@ -34,6 +34,7 @@ func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if _, ok := msg.(tea.KeyMsg); ok {
 			game.WaitingForNextRound = false
 			game.startNewRound()
+			return game, tea.Batch(tea.EnterAltScreen)
 		}
 		return game, nil
 	}
@@ -42,9 +43,23 @@ func (game Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return game, nil
 	}
 
-	game.processGameUpdate(msg)
+	round := &game.Rounds[game.CurrentRound]
+	player := round.Players[round.CurrentPlayer]
 
-	return game, nil
+	if player.IsLLM {
+		action := GetLLMAction(*round)
+		game.applyLLMAction(action)
+		return game, nil
+	}
+
+	cmd := game.processGameUpdate(msg)
+	return game, cmd
+}
+
+func (game *Game) applyLLMAction(action string) {
+	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(action)}
+	actionSuccessful, message := game.handleKeyInput(keyMsg)
+	game.processPlayerAction(actionSuccessful, message)
 }
 
 func (game Game) View() string {
