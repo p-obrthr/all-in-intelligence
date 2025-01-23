@@ -4,7 +4,7 @@
 
 ## Description
 
-The Game is designed to be played through a console or terminal. It features an easy-to-use interface created using the TUI libraries **Bubble Tea** and **Lip Gloss**. The goal of the game is to test and improve your poker skills.
+The Game is designed to be played through a console or terminal with the opportuniy against a LLM player. It features an easy-to-use interface created using the TUI libraries **Bubble Tea** and **Lip Gloss**.
 
 - **Bubble Tea**: Library used for building interactive console applications.
 - **Lip Gloss**: Library used to enhance the design and styling of the user interface.
@@ -23,11 +23,11 @@ To run this project, ensure you have the following:
     ```
 2. Navigate to the source code directory:
     ```bash    
-    cd all-in-intelligence/src
+    cd all-in-intelligence/src/cmd
     ```
 3. Run the project:
     ```bash
-    go run main.go
+    go run .
     ```
 
 ---
