@@ -1,10 +1,10 @@
-# All-In-Intelligence
+<img src="assets/cardArt.png" width="600" />
 
 **All-In-Intelligence** is a text-based texas holdem poker game implemented in Go. The game leverages an interactive user interface (TUI) with visual styling.
 
 ## Description
 
-The Game is designed to be played through a console or terminal with the opportuniy against a LLM player. It features an easy-to-use interface created using the TUI libraries **Bubble Tea** and **Lip Gloss**.
+The game is designed to be played through a console or terminal, with the option to play against an LLM (Large Language Model) player. It features an easy-to-use interface created using the TUI libraries **Bubble Tea** and **Lip Gloss**.
 
 - **Bubble Tea**: Library used for building interactive console applications.
 - **Lip Gloss**: Library used to enhance the design and styling of the user interface.
@@ -32,4 +32,16 @@ To run this project, ensure you have the following:
 
 ---
 
-<img src="assets/screenshot.png" width="300" />
+## Configuration
+
+Before starting the game, you will be prompted to configure the game. You can adjust various settings during this phase.
+
+> Please note that you will need an OpenAI API key (e.g., as an os environment variable `OPENAI_API_KEY`) to play against an LLM player.
+
+<img src="assets/config.png" width="300" />
+
+## Gameplay
+
+Once configured, the game will begin, and you will see the user interface during gameplay.
+
+<img src="assets/gameplay.png" width="300" />

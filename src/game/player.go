@@ -17,14 +17,19 @@ type Player struct {
 	IsLLM    bool
 }
 
-func newPlayer(i int) Player {
+func newPlayer(i int, startingMoney int, isLlm bool) Player {
+	name := fmt.Sprintf("Player %d", i)
+	if isLlm {
+		name += " (LLM)"
+	}
 	return Player{
 		Id:    i,
-		Name:  fmt.Sprintf("Player %d", i),
+		Name:  name,
 		Cards: make([]Card, 2),
-		Money: 1000,
+		Money: startingMoney,
 		InPot: 0,
 		IsOut: false,
+		IsLLM: isLlm,
 	}
 }
 
@@ -80,7 +85,11 @@ func (round *Round) check() (bool, string) {
 	if player.InPot == round.LastRaise {
 		return true, fmt.Sprintf("%s checked.", player.Name)
 	} else {
-		return false, fmt.Sprintf("%s cannot check. Current raise is up to %d.", player.Name, round.LastRaise)
+		return false, fmt.Sprintf(
+			"%s cannot check. Current raise is up to %d.",
+			player.Name,
+			round.LastRaise,
+		)
 	}
 }
 
@@ -93,7 +102,11 @@ func (round *Round) call() (bool, string) {
 			player.Money -= diff
 			round.Pot += diff
 			player.InPot += diff
-			return true, fmt.Sprintf("%s called to %d.", player.Name, player.InPot)
+			return true, fmt.Sprintf(
+				"%s called to %d.",
+				player.Name,
+				player.InPot,
+			)
 		} else {
 
 		}
@@ -135,7 +148,14 @@ func (round *Round) applyBlinds() {
 		smallBlindPlayer.InPot = smallBlindAmount
 		round.Pot += smallBlindAmount
 		round.LastRaise = smallBlindPlayer.InPot
-		round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s paid small blind of %d.", smallBlindPlayer.Name, smallBlindAmount))
+		round.MsgLog = append(
+			round.MsgLog,
+			fmt.Sprintf(
+				"%s paid small blind of %d.",
+				smallBlindPlayer.Name,
+				smallBlindAmount,
+			),
+		)
 	} else {
 
 	}
@@ -152,7 +172,14 @@ func (round *Round) applyBlinds() {
 		bigBlindPlayer.InPot = bigBlindAmount
 		round.Pot += bigBlindAmount
 		round.LastRaise = bigBlindPlayer.InPot
-		round.MsgLog = append(round.MsgLog, fmt.Sprintf("%s paid big blind of %d.", bigBlindPlayer.Name, bigBlindAmount))
+		round.MsgLog = append(
+			round.MsgLog,
+			fmt.Sprintf(
+				"%s paid big blind of %d.",
+				bigBlindPlayer.Name,
+				bigBlindAmount,
+			),
+		)
 	} else {
 
 	}

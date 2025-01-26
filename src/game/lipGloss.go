@@ -11,6 +11,18 @@ var (
 	Blue   = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 )
 
+type Styles struct {
+	BorderColor lipgloss.Color
+	InputField  lipgloss.Style
+}
+
+func DefaultConfigStyles() *Styles {
+	styles := new(Styles)
+	styles.BorderColor = lipgloss.Color("36")
+	styles.InputField = lipgloss.NewStyle().BorderForeground(styles.BorderColor).BorderStyle(lipgloss.NormalBorder()).Padding(1).Width(80)
+	return styles
+}
+
 func colorMessage(success bool, message string) string {
 	if success {
 		return Green.Render(message)
