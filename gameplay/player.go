@@ -1,4 +1,4 @@
-package game
+package gameplay
 
 import (
 	"fmt"
@@ -49,7 +49,7 @@ func sortPlayersByRanking(players *[]Player) {
 	})
 }
 
-func (round *Round) raise(amount_optional ...int) (bool, string) {
+func (round *Round) Raise(amount_optional ...int) (bool, string) {
 	var amount int
 	if len(amount_optional) > 0 {
 		amount = amount_optional[0]
@@ -73,13 +73,13 @@ func (round *Round) raise(amount_optional ...int) (bool, string) {
 	}
 }
 
-func (round *Round) fold() (bool, string) {
+func (round *Round) Fold() (bool, string) {
 	currentPlayer := &round.Players[round.CurrentPlayer]
 	currentPlayer.IsOut = true
 	return true, fmt.Sprintf("%s folded.", currentPlayer.Name)
 }
 
-func (round *Round) check() (bool, string) {
+func (round *Round) Check() (bool, string) {
 	player := &round.Players[round.CurrentPlayer]
 
 	if player.InPot == round.LastRaise {
@@ -93,7 +93,7 @@ func (round *Round) check() (bool, string) {
 	}
 }
 
-func (round *Round) call() (bool, string) {
+func (round *Round) Call() (bool, string) {
 	player := &round.Players[round.CurrentPlayer]
 	diff := round.LastRaise - player.InPot
 
@@ -202,11 +202,11 @@ func (round *Round) nextPlayer() {
 	}
 }
 
-func (game *Game) processPlayerAction(actionSuccessful bool, message string) {
+func (game *Game) ProcessPlayerAction(actionSuccessful bool, message string) {
 	round := &game.Rounds[game.CurrentRound]
 	player := &round.Players[round.CurrentPlayer]
 
-	round.MsgLog = append(round.MsgLog, colorMessage(actionSuccessful, message))
+	round.MsgLog = append(round.MsgLog, message)
 
 	if actionSuccessful {
 		player.HasActed = true

@@ -1,4 +1,4 @@
-package game
+package gameplay
 
 import (
 	"fmt"
@@ -297,7 +297,7 @@ func getRankingType(ranking string) int {
 	return rankingMap[ranking]
 }
 
-func getCards(cards []Card) string {
+func GetCards(cards []Card) string {
 	cardsStr := ""
 	for _, card := range cards {
 		if card.Symbol != "" && card.Rank != "" {
@@ -309,7 +309,7 @@ func getCards(cards []Card) string {
 	return cardsStr
 }
 
-func getCardString(card Card) string {
+func GetCardString(card Card) string {
 	var color lipgloss.Style
 	switch card.Symbol {
 	case "♠", "♣":
@@ -329,7 +329,7 @@ func getCardString(card Card) string {
 	return cardStr
 }
 
-func getCardsString(cards []Card) string {
+func GetCardsString(cards []Card) string {
 	if len(cards) == 0 {
 		return ""
 	}
@@ -337,7 +337,7 @@ func getCardsString(cards []Card) string {
 	var one, two, three, four, five string
 
 	for _, card := range cards {
-		cardStr := getCardString(card)
+		cardStr := GetCardString(card)
 		lines := strings.Split(cardStr, "\n")
 
 		one += lines[0] + " "

@@ -1,4 +1,4 @@
-package game
+package gameplay
 
 import "github.com/charmbracelet/lipgloss"
 

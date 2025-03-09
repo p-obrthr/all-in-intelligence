@@ -1,8 +1,8 @@
-package game
+package gameplay
 
 import (
+	"all-in-intelligence/services"
 	"fmt"
-	"src/services"
 )
 
 type Round struct {
@@ -77,7 +77,7 @@ func (game *Game) endRound() {
 					fmt.Sprintf(
 						"%s cards: %s",
 						player.Name,
-						getCards(player.Cards),
+						GetCards(player.Cards),
 					),
 				)
 			}
@@ -108,4 +108,14 @@ func (round *Round) nextStage() bool {
 	resetPlayerActions(round)
 	round.RoundStage++
 	return true
+}
+
+func (round *Round) determineWinner() *Player {
+	sortPlayersByRanking(&round.Players)
+	for _, player := range round.Players {
+		if !player.IsOut {
+			return &player
+		}
+	}
+	return nil
 }
