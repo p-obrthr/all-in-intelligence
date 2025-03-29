@@ -1,36 +1,25 @@
-<img src="assets/cardArt.png" width="600" />
+<img src="assets/cardArt.jpg" width="100%" />
 
-**All-In-Intelligence** is a text-based texas holdem poker game implemented in Go. The game leverages an interactive user interface (TUI) with visual styling.
+**All-In-Intelligence** is a text-based texas holdem poker game implemented in Go. The game leverages an interactive user interface (TUI) with visual styling and supports multiplayer gameplay through websocket connectivity.
 
 ## Description
+All-In-Intelligence is designed to be played through a console or terminal, with options to:
 
-The game is designed to be played through a console or terminal, with the option to play against an LLM (Large Language Model) player. It features an easy-to-use interface created using the TUI libraries **Bubble Tea** and **Lip Gloss**.
+- play against an LLM (Large Language Model) opponent
+- play against other human players via websocket server connectivity
 
-- **Bubble Tea**: Library used for building interactive console applications.
-- **Lip Gloss**: Library used to enhance the design and styling of the user interface.
+The terminal user interface leverages powerful Go libraries from [Charm](https://github.com/charmbracelet) for its experience.
 
 ## Prerequisites
 
 To run this project, ensure you have the following:
 
 - Go programming language installed on your system.
+- OpenAi Api Key
 
-## Use of the Project
+## How to Play
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/p-obrthr/all-in-intelligence.git
-    ```
-2. Navigate to the source code directory:
-    ```bash    
-    cd all-in-intelligence/src/cmd
-    ```
-3. Run the project:
-    ```bash
-    go run .
-    ```
-
----
+To play, one player connects to the server, configures the game settings, and can start playing immediately. Additional players can join flexibly at any time and will be included in the next round of play.
 
 ## Configuration
 
@@ -38,10 +27,10 @@ Before starting the game, you will be prompted to configure the game. You can ad
 
 > Please note that you will need an OpenAI API key (e.g., as an os environment variable `OPENAI_API_KEY`) to play against an LLM player.
 
-<img src="assets/config.png" width="300" />
+<img src="assets/config.jpg" width="100%" />
 
 ## Gameplay
 
 Once configured, the game will begin, and you will see the user interface during gameplay.
 
-<img src="assets/gameplay.png" width="300" />
+<img src="assets/game.jpg" height="400px" />

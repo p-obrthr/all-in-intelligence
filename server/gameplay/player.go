@@ -1,8 +1,10 @@
 package gameplay
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type Player struct {
@@ -14,7 +16,8 @@ type Player struct {
 	InPot    int
 	IsOut    bool
 	HasActed bool
-	IsLLM    bool
+
+	IsLLM bool
 }
 
 func newPlayer(i int, startingMoney int, isLlm bool) Player {
@@ -22,6 +25,7 @@ func newPlayer(i int, startingMoney int, isLlm bool) Player {
 	if isLlm {
 		name += " (LLM)"
 	}
+	fmt.Println("created " + name)
 	return Player{
 		Id:    i,
 		Name:  name,
@@ -57,7 +61,7 @@ func (round *Round) Raise(amount_optional ...int) (bool, string) {
 		amount = round.LastRaise + 100
 	}
 
-	player := &round.Players[round.CurrentPlayer]
+	player := round.GetPlayerById(round.CurrentPlayerId)
 
 	diff := amount - player.InPot
 
@@ -74,13 +78,13 @@ func (round *Round) Raise(amount_optional ...int) (bool, string) {
 }
 
 func (round *Round) Fold() (bool, string) {
-	currentPlayer := &round.Players[round.CurrentPlayer]
+	currentPlayer := round.GetPlayerById(round.CurrentPlayerId)
 	currentPlayer.IsOut = true
 	return true, fmt.Sprintf("%s folded.", currentPlayer.Name)
 }
 
 func (round *Round) Check() (bool, string) {
-	player := &round.Players[round.CurrentPlayer]
+	player := round.GetPlayerById(round.CurrentPlayerId)
 
 	if player.InPot == round.LastRaise {
 		return true, fmt.Sprintf("%s checked.", player.Name)
@@ -94,7 +98,7 @@ func (round *Round) Check() (bool, string) {
 }
 
 func (round *Round) Call() (bool, string) {
-	player := &round.Players[round.CurrentPlayer]
+	player := round.GetPlayerById(round.CurrentPlayerId)
 	diff := round.LastRaise - player.InPot
 
 	if diff > 0 {
@@ -108,14 +112,20 @@ func (round *Round) Call() (bool, string) {
 				player.InPot,
 			)
 		} else {
-
+			round.Pot += player.Money
+			player.InPot += player.Money
+			player.Money = 0
+			return true, fmt.Sprintf(
+				"%s is all-in",
+				player.Name,
+			)
 		}
 	}
 	return true, fmt.Sprintf("%s checked.", player.Name)
 }
 
-func checkStatus(player *Player, board *[]Card) {
-	cards := append(player.Cards, *board...)
+func (player *Player) checkStatus(board []Card) {
+	cards := append(player.Cards, board...)
 	cards = filterEmptyCards(cards)
 
 	sortCardsByRanking(&cards)
@@ -133,6 +143,10 @@ func checkStatus(player *Player, board *[]Card) {
 		TypeName: ranking,
 		Score:    score,
 	}
+
+	fmt.Println(player.Id)
+	fmt.Println(cards)
+	fmt.Println(player.Status)
 }
 
 func (round *Round) applyBlinds() {
@@ -157,7 +171,6 @@ func (round *Round) applyBlinds() {
 			),
 		)
 	} else {
-
 	}
 
 	bigBlindPlayer := &round.Players[round.BigBlindId]
@@ -181,45 +194,121 @@ func (round *Round) applyBlinds() {
 			),
 		)
 	} else {
-
 	}
 
-	round.CurrentPlayer = (round.BigBlindId + 1) % len(round.Players)
-	for round.Players[round.CurrentPlayer].IsOut {
-		round.CurrentPlayer = (round.CurrentPlayer + 1) % len(round.Players)
-	}
+	round.CurrentPlayerId = round.findNextPlayerId(bigBlindPlayer.Id)
 }
 
 func (round *Round) nextPlayer() {
 	totalPlayers := len(round.Players)
 
-	for i := 1; i < totalPlayers; i++ {
-		nextPlayerId := (round.CurrentPlayer + i) % totalPlayers
-		if !round.Players[nextPlayerId].IsOut {
-			round.CurrentPlayer = nextPlayerId
+	currentPos := -1
+	for i, player := range round.Players {
+		if player.Id == round.CurrentPlayerId {
+			currentPos = i
 			break
+		}
+	}
+
+	if currentPos == -1 {
+		fmt.Println("err current player")
+		return
+	}
+
+	nextPos := (currentPos + 1) % totalPlayers
+	for round.Players[nextPos].IsOut {
+		nextPos = (nextPos + 1) % totalPlayers
+	}
+
+	round.CurrentPlayerId = round.Players[nextPos].Id
+}
+
+func (game *Game) CheckPlay() {
+	round := &game.Rounds[game.CurrentRound]
+	player := round.GetPlayerById(round.CurrentPlayerId)
+	if player.IsLLM {
+		isValid := false
+
+		for !isValid {
+			action := game.GetLLMAction(*round)
+			isValid = game.ProcessPlayerAction(action)
+
 		}
 	}
 }
 
-func (game *Game) ProcessPlayerAction(actionSuccessful bool, message string) {
-	round := &game.Rounds[game.CurrentRound]
-	player := &round.Players[round.CurrentPlayer]
+type ActionResponse struct {
+	Action string `json:"action"`
+}
 
-	round.MsgLog = append(round.MsgLog, message)
+func (game *Game) GetLLMAction(round Round) string {
+	prompt := GetPrompt(round)
+	response := game.SendRequest(prompt, round)
+	return response
+}
 
-	if actionSuccessful {
-		player.HasActed = true
-		if getCountActivePlayers(*round) < 2 {
-			game.endRound()
-			return
-		}
+func GetPrompt(round Round) string {
+	player := round.GetPlayerById(round.CurrentPlayerId)
+	return fmt.Sprintf(
+		"Pot: %d\n\nBoard: %s\n\nYour Cards: %s\n\n Your Player Name: %s\n\nYour Money: %d\n\nLog: %s\n\n",
+		round.Pot,
+		round.Board,
+		player.Cards,
+		player.Name,
+		player.Money,
+		strings.Join(round.MsgLog, "\n"),
+	)
+}
 
-		round.nextPlayer()
-		if isAllPlayersHaveActed(*round) && !round.nextStage() {
-			game.endRound()
-		}
+func (game *Game) SendRequest(prompt string, round Round) string {
+	response, err := game.OpenAIClient.SendMessage(prompt)
+	if err != nil {
+		return ""
 	}
+	var actionResponse ActionResponse
+	if err := json.Unmarshal([]byte(response), &actionResponse); err != nil {
+		return ""
+	}
+	fmt.Println("-----" + actionResponse.Action)
+	return actionResponse.Action
+}
+
+func (game *Game) ProcessPlayerAction(message string) bool {
+	round := &game.Rounds[game.CurrentRound]
+	player := round.GetPlayerById(round.CurrentPlayerId)
+
+	var resp string
+	var b bool
+	switch message {
+	case "r":
+		b, resp = round.Raise()
+	case "c":
+		b, resp = round.Call()
+	case "f":
+		b, resp = round.Fold()
+	case "_":
+		b, resp = round.Check()
+	}
+
+	if !b {
+		return false
+	}
+
+	// player.checkStatus(round.Board)
+
+	round.MsgLog = append(round.MsgLog, resp)
+
+	player.HasActed = true
+	if getCountActivePlayers(*round) < 2 {
+		game.endRound()
+		return true
+	}
+
+	round.nextPlayer()
+	if isAllPlayersHaveActed(*round) && !round.nextStage() {
+		game.endRound()
+	}
+	return true
 }
 
 func getCountActivePlayers(round Round) int {

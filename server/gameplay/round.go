@@ -1,23 +1,21 @@
 package gameplay
 
 import (
-	"all-in-intelligence/services"
 	"fmt"
 )
 
 type Round struct {
-	Deck           Deck
-	Players        []Player
-	Board          []Card
-	Pot            int
-	LastRaise      int
-	CurrentPlayer  int
-	RoundStage     RoundStage
-	MsgLog         []string
-	BigBlindAmount int
-	SmallBlindId   int
-	BigBlindId     int
-	OpenAIClient   services.OpenAIClient
+	Deck            Deck
+	Players         []Player
+	Board           []Card
+	Pot             int
+	LastRaise       int
+	CurrentPlayerId int
+	RoundStage      RoundStage
+	MsgLog          []string
+	BigBlindAmount  int
+	SmallBlindId    int
+	BigBlindId      int
 }
 
 type RoundStage int
@@ -29,20 +27,19 @@ const (
 	River
 )
 
-func newRound(Players []Player, client services.OpenAIClient, bigBlindAmount int) Round {
+func newRound(Players []Player, bigBlindAmount int) Round {
 	newRound := Round{
-		Deck:           newDeck(),
-		Players:        Players,
-		Board:          make([]Card, 0),
-		Pot:            0,
-		LastRaise:      0,
-		CurrentPlayer:  0,
-		RoundStage:     Preflop,
-		BigBlindAmount: bigBlindAmount,
-		SmallBlindId:   0,
-		BigBlindId:     1,
-		MsgLog:         []string{},
-		OpenAIClient:   client,
+		Deck:            newDeck(),
+		Players:         Players,
+		Board:           make([]Card, 0),
+		Pot:             0,
+		LastRaise:       0,
+		CurrentPlayerId: 0,
+		RoundStage:      Preflop,
+		BigBlindAmount:  bigBlindAmount,
+		SmallBlindId:    0,
+		BigBlindId:      1,
+		MsgLog:          []string{},
 	}
 
 	for i := range newRound.Players {
@@ -57,6 +54,28 @@ func newRound(Players []Player, client services.OpenAIClient, bigBlindAmount int
 	newRound.applyBlinds()
 
 	return newRound
+}
+
+func (round *Round) GetPlayerById(id int) *Player {
+	for i := range round.Players {
+		if round.Players[i].Id == id {
+			return &round.Players[i]
+		}
+	}
+	return nil
+}
+
+func (round *Round) findNextPlayerId(startId int) int {
+	totalPlayers := len(round.Players)
+
+	for i := 0; i < totalPlayers; i++ {
+		nextId := (startId + i) % totalPlayers
+		if !round.Players[nextId].IsOut {
+			return round.Players[nextId].Id
+		}
+	}
+
+	return round.Players[startId].Id
 }
 
 func (game *Game) endRound() {
@@ -107,14 +126,24 @@ func (round *Round) nextStage() bool {
 	}
 	resetPlayerActions(round)
 	round.RoundStage++
+	for i := 0; i < len(round.Players); i++ {
+		round.Players[i].checkStatus(round.Board)
+	}
 	return true
 }
 
 func (round *Round) determineWinner() *Player {
+	for i := range round.Players {
+		if !round.Players[i].IsOut {
+			round.Players[i].checkStatus(round.Board)
+		}
+	}
+
 	sortPlayersByRanking(&round.Players)
-	for _, player := range round.Players {
-		if !player.IsOut {
-			return &player
+
+	for i := range round.Players {
+		if !round.Players[i].IsOut {
+			return &round.Players[i]
 		}
 	}
 	return nil

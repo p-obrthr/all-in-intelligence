@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
-	"strings"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 type Card struct {
@@ -307,47 +304,4 @@ func GetCards(cards []Card) string {
 		}
 	}
 	return cardsStr
-}
-
-func GetCardString(card Card) string {
-	var color lipgloss.Style
-	switch card.Symbol {
-	case "♠", "♣":
-		color = Black
-	case "♥", "♦":
-		color = Red
-	default:
-		color = Grey
-	}
-
-	cardStr := "┌───────┐\n"
-	cardStr += fmt.Sprintf("│%2s     │\n", card.Rank)
-	cardStr += fmt.Sprintf("│   %s   │\n", color.Render(card.Symbol))
-	cardStr += fmt.Sprintf("│     %2s│\n", card.Rank)
-	cardStr += "└───────┘\n"
-	cardStr += "\n"
-	return cardStr
-}
-
-func GetCardsString(cards []Card) string {
-	if len(cards) == 0 {
-		return ""
-	}
-
-	var one, two, three, four, five string
-
-	for _, card := range cards {
-		cardStr := GetCardString(card)
-		lines := strings.Split(cardStr, "\n")
-
-		one += lines[0] + " "
-		two += lines[1] + " "
-		three += lines[2] + " "
-		four += lines[3] + " "
-		five += lines[4] + " "
-	}
-
-	result := strings.TrimSpace(one) + "\n" + strings.TrimSpace(two) + "\n" + strings.TrimSpace(three) + "\n" + strings.TrimSpace(four) + "\n" + strings.TrimSpace(five) + "\n"
-
-	return result
 }

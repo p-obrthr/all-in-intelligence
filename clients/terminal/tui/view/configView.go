@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"terminal/tui/message"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,11 +12,10 @@ import (
 )
 
 var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle  = focusedStyle
-	noStyle      = lipgloss.NewStyle()
-
+	focusedStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	blurredStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	cursorStyle   = focusedStyle
+	noStyle       = lipgloss.NewStyle()
 	focusedButton = focusedStyle.Render("[ Submit ]")
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 )
@@ -27,7 +27,7 @@ type ConfigView struct {
 
 func NewConfigView() *ConfigView {
 	v := ConfigView{
-		inputs: make([]textinput.Model, 2),
+		inputs: make([]textinput.Model, 3),
 	}
 
 	var t textinput.Model
@@ -42,11 +42,10 @@ func NewConfigView() *ConfigView {
 			t.Focus()
 			t.PromptStyle = focusedStyle
 			t.TextStyle = focusedStyle
-		// case 1:
-		// 	t.Placeholder = "Amount of real websocket Players to join "
-		// 	t.CharLimit = 64
 		case 1:
 			t.Placeholder = "Small blind amount"
+		case 2:
+			t.Placeholder = "Start Money amount"
 		}
 
 		v.inputs[i] = t
@@ -55,11 +54,11 @@ func NewConfigView() *ConfigView {
 	return &v
 }
 
-func (v ConfigView) Init() tea.Cmd {
+func (v *ConfigView) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (v ConfigView) HandleKey(msg interface{}) (View, tea.Cmd) {
+func (v *ConfigView) HandleKey(msg interface{}) (View, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -78,35 +77,53 @@ func (v ConfigView) HandleKey(msg interface{}) (View, tea.Cmd) {
 					fmt.Println("err converting big blind amount:", err)
 				}
 
-				return NewGameView(players, bbAmount), tea.Quit
-			}
-
-			if s == "up" || s == "shift+tab" {
-				v.focusIndex--
-			} else {
-				v.focusIndex++
-			}
-
-			if v.focusIndex > len(v.inputs) {
-				v.focusIndex = 0
-			} else if v.focusIndex < 0 {
-				v.focusIndex = len(v.inputs)
-			}
-
-			cmds := make([]tea.Cmd, len(v.inputs))
-			for i := 0; i <= len(v.inputs)-1; i++ {
-				if i == v.focusIndex {
-					cmds[i] = v.inputs[i].Focus()
-					v.inputs[i].PromptStyle = focusedStyle
-					v.inputs[i].TextStyle = focusedStyle
-					continue
+				startMoneyAmount, err := strconv.Atoi(v.inputs[2].Value())
+				if err != nil {
+					fmt.Println("err converting big blind amount:", err)
 				}
-				v.inputs[i].Blur()
-				v.inputs[i].PromptStyle = noStyle
-				v.inputs[i].TextStyle = noStyle
-			}
 
-			return v, tea.Batch(cmds...)
+				config := message.Config{
+					Type:             "config",
+					Players:          players,
+					BBAmount:         bbAmount,
+					StartMoneyAmount: startMoneyAmount,
+				}
+
+				// fmt.Printf("Config als JSON: %s\n", configJSON)
+
+				// SendConfigCmd(config)
+
+				// return NewGameView(), nil
+				return NewGameView(), SendConfigCmd(config)
+			} else {
+
+				if s == "up" || s == "shift+tab" {
+					v.focusIndex--
+				} else {
+					v.focusIndex++
+				}
+
+				if v.focusIndex > len(v.inputs) {
+					v.focusIndex = 0
+				} else if v.focusIndex < 0 {
+					v.focusIndex = len(v.inputs)
+				}
+
+				cmds := make([]tea.Cmd, len(v.inputs))
+				for i := 0; i <= len(v.inputs)-1; i++ {
+					if i == v.focusIndex {
+						cmds[i] = v.inputs[i].Focus()
+						v.inputs[i].PromptStyle = focusedStyle
+						v.inputs[i].TextStyle = focusedStyle
+						continue
+					}
+					v.inputs[i].Blur()
+					v.inputs[i].PromptStyle = noStyle
+					v.inputs[i].TextStyle = noStyle
+				}
+
+				return v, tea.Batch(cmds...)
+			}
 
 		case "esc":
 			return NewStartView(), nil
@@ -119,7 +136,7 @@ func (v ConfigView) HandleKey(msg interface{}) (View, tea.Cmd) {
 }
 
 func (v ConfigView) Render() string {
-	return v.GetConfigView()
+	return "\n" + v.GetConfigView()
 }
 
 func (v *ConfigView) updateInputs(msg tea.Msg) tea.Cmd {
@@ -130,6 +147,14 @@ func (v *ConfigView) updateInputs(msg tea.Msg) tea.Cmd {
 	}
 
 	return tea.Batch(cmds...)
+}
+
+func SendConfigCmd(config message.Config) tea.Cmd {
+	// fmt.Println("send config command")
+
+	return func() tea.Msg {
+		return config
+	}
 }
 
 func (v ConfigView) GetConfigView() string {
