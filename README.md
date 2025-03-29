@@ -33,4 +33,4 @@ Before starting the game, you will be prompted to configure the game. You can ad
 
 Once configured, the game will begin, and you will see the user interface during gameplay.
 
-<img src="assets/game.jpg" height="400px" />
+<img src="assets/game.jpg" width="70%" />
