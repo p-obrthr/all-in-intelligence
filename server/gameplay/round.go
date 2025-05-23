@@ -105,6 +105,7 @@ func (game *Game) endRound() {
 	} else {
 	}
 
+	round.MsgLog = append(round.MsgLog, "--wait for any key action to start new round--")
 	game.WaitingForNextRound = true
 }
 

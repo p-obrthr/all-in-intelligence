@@ -53,7 +53,7 @@ func NewGame(llmPlayers int, startMoney int, bbAmount int) *Game {
 		Id++
 	}
 
-	game.startNewRound()
+	game.StartNewRound()
 
 	// roundJSON, err := json.MarshalIndent(&game.Rounds[game.CurrentRound], "", "  ")
 
@@ -76,7 +76,7 @@ func (game *Game) AppendNewPlayer() int {
 	return Id
 }
 
-func (game *Game) startNewRound() {
+func (game *Game) StartNewRound() {
 	if game.Quit || game.CurrentRound >= len(game.Rounds) {
 		return
 	}

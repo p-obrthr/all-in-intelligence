@@ -226,7 +226,7 @@ func (round *Round) nextPlayer() {
 func (game *Game) CheckPlay() {
 	round := &game.Rounds[game.CurrentRound]
 	player := round.GetPlayerById(round.CurrentPlayerId)
-	if player.IsLLM {
+	if player.IsLLM && !game.WaitingForNextRound {
 		isValid := false
 
 		for !isValid {
