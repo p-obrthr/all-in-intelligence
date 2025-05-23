@@ -27,10 +27,10 @@ Before starting the game, you will be prompted to configure the game. You can ad
 
 > Please note that you will need an OpenAI API key (e.g., as an os environment variable `OPENAI_API_KEY`) to play against an LLM player.
 
-<img src="assets/config.jpg" width="100%" />
+<img src="assets/config.jpg" width="80%" />
 
 ## Gameplay
 
 Once configured, the game will begin, and you will see the user interface during gameplay.
 
-<img src="assets/game.jpg" width="70%" />
+<img src="assets/game.jpg" width="50%" />
